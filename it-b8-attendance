@@ -1,659 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#173b66">
+<title>IT B-8 Daily Attendance System</title>
+<style>
+:root{--navy:#173b66;--blue:#2463a6;--pale:#eef4fb;--green:#18794e;--red:#b42318;--amber:#946200;--ink:#172334;--muted:#637083;--line:#d9e2ee;--white:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:#f4f7fb;color:var(--ink);font-family:Arial,Helvetica,sans-serif;line-height:1.45}
+header{background:linear-gradient(135deg,#173b66,#2463a6);color:#fff;padding:22px 16px}
+.header-inner{max-width:1100px;margin:auto}
+h1{font-size:clamp(1.4rem,4vw,2rem);margin:0 0 5px}
+header p{margin:0;opacity:.9}
+main{max-width:1100px;margin:20px auto;padding:0 14px 40px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 4px 14px #1723340a}
+h2{font-size:1.15rem;margin:0 0 12px;color:var(--navy)}
+h3{font-size:1rem;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+label{display:block;font-size:.9rem;font-weight:700;margin-bottom:5px}
+input,select,textarea,button{font:inherit}
+input,select,textarea{width:100%;padding:10px 11px;border:1px solid #bccada;border-radius:8px;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:2px solid #a6c9f5;border-color:var(--blue)}
+button{border:0;border-radius:8px;padding:10px 13px;background:var(--blue);color:white;font-weight:700;cursor:pointer}
+button:hover{filter:brightness(.94)}
+button.secondary{background:#e8eef6;color:var(--navy)}
+button.danger{background:#b42318}
+button.success{background:#18794e}
+button.small{padding:6px 9px;font-size:.84rem}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.note{font-size:.88rem;color:var(--muted)}
+.warning{background:#fff7e6;border:1px solid #f0d28a;color:#6e4a00;padding:11px;border-radius:9px;font-size:.9rem}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--pale);border-radius:10px;padding:12px;text-align:center}
+.stat strong{display:block;font-size:1.45rem;color:var(--navy)}
+.stat span{font-size:.8rem;color:var(--muted)}
+.table-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:650px}
+th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{background:#f1f5fa;color:var(--navy);font-size:.88rem}
+td select{min-width:130px;padding:7px}
+.pill{display:inline-block;padding:3px 8px;border-radius:20px;font-size:.78rem;font-weight:700}
+.present{background:#dff5e9;color:#146c43}.absent{background:#fee4e2;color:#a5221a}.late{background:#fff0c2;color:#815900}.excused{background:#e6e9ff;color:#3730a3}
+.hidden{display:none!important}
+.tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.tabs button{background:#e8eef6;color:var(--navy)}
+.tabs button.active{background:var(--navy);color:#fff}
+.empty{text-align:center;color:var(--muted);padding:22px}
+footer{text-align:center;color:var(--muted);font-size:.82rem;padding:8px 12px 25px}
+@media(max-width:560px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.panel{padding:13px}header{padding:18px 14px}}
+@media print{header{background:#fff;color:#000;padding:0}.no-print,button{display:none!important}body{background:#fff}.panel{box-shadow:none;border:0;padding:4px}main{max-width:none;margin:0;padding:0}.table-wrap{overflow:visible}table{min-width:0;font-size:10pt}th,td{padding:5px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <h1>IT B-8 Daily Attendance System</h1>
+    <p>Student attendance • Daily register • Attendance history • CSV export</p>
+  </div>
+</header>
+<main>
+  <section class="panel" id="loginPanel">
+    <h2>Sign in</h2>
+    <p class="note">This starter version stores its data in this browser on this device.</p>
+    <form id="loginForm" class="grid">
+      <div><label for="loginRole">Account</label><select id="loginRole"><option value="teacher">Teacher</option><option value="admin">Administrator</option></select></div>
+      <div><label for="loginPassword">Password</label><input id="loginPassword" type="password" required autocomplete="current-password" placeholder="Enter password"></div>
+      <div style="align-self:end"><button type="submit">Sign in</button></div>
+    </form>
+    <p class="note">First-time demo passwords: Teacher <b>1234</b> · Administrator <b>0528</b>. Change them after signing in. These are not secure credentials for a public, real-world system.</p>
+    <p id="loginError" role="alert" style="color:#b42318"></p>
+  </section>
 
+  <section id="appPanel" class="hidden">
+    <div class="panel no-print">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div><h2 style="margin-bottom:2px">Attendance workspace</h2><span class="note" id="welcomeText"></span></div>
+        <button id="logoutBtn" class="secondary">Sign out</button>
+      </div>
+      <div class="tabs" style="margin-top:14px">
+        <button class="active" data-tab="attendanceTab">Daily attendance</button>
+        <button data-tab="historyTab">History & reports</button>
+        <button data-tab="studentsTab">Students</button>
+        <button data-tab="settingsTab">Settings</button>
+      </div>
+    </div>
 
-<!DOCTYPE html>  <html lang="so">  
-<head>  
-<meta charset="UTF-8">  
-<meta name="viewport" content="width=device-width, initial-scale=1.0">  
-<title>IT B-8 Attendance System</title>  <style>  
-*{box-sizing:border-box}  
-body{margin:0;font-family:Arial,sans-serif;background:#f1f5f9;color:#172033}  
-header{background:#12345a;color:white;text-align:center;padding:20px 10px}  
-main{max-width:1100px;margin:auto;padding:15px}  
-.card{background:white;padding:16px;border-radius:12px;margin-bottom:15px;box-shadow:0 2px 8px #0001}  
-input,select,button{width:100%;padding:11px;margin:5px 0;border:1px solid #cbd5e1;border-radius:7px;font-size:15px}  
-button{background:#12345a;color:white;border:0;font-weight:bold;cursor:pointer}  
-button:hover{opacity:.9}  
-.green{background:#16803c}  
-.red{background:#b42318}  
-.orange{background:#c27808}  
-.hidden{display:none!important}  
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}  
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}  
-.stat{background:#eaf1f8;padding:12px 4px;text-align:center;border-radius:8px}  
-.stat strong{display:block;font-size:24px;margin-top:6px}  
-.table-wrap{overflow-x:auto}  
-table{border-collapse:collapse;width:100%;min-width:650px}  
-th,td{padding:10px;border-bottom:1px solid #ddd;text-align:left}  
-th{background:#12345a;color:white}  
-.small{font-size:13px;color:#64748b;white-space:pre-wrap}  
-.center{text-align:center}  
-.login-box{max-width:380px;margin:35px auto;text-align:center}  
-hr{border:0;border-top:1px solid #ddd;margin:18px 0}  
-@media(max-width:500px){.stats{grid-template-columns:repeat(2,1fr)}}  
-@media print{button,.no-print{display:none!important}body{background:white}.card{box-shadow:none}}  
-</style>  </head>  <body>  
-<header>  
-<h1>IT B-8 Daily Attendance</h1>  
-<p>Student Attendance Management System</p>  
-</header>  <!-- LOGIN -->  <main id="loginPage">  
-<div class="card login-box">  
-<h2>Login</h2>  
-<p>Geli ID-gaaga iyo password-kaaga.</p>  
-<form id="loginForm">  
-<input id="loginID" placeholder="Student / Teacher ID ama ADMIN" required>  
-<input id="loginPassword" type="password" placeholder="Password" required>  
-<button type="submit">Login</button>  
-</form>  
-<p id="loginMessage" class="small" role="status"></p>  
-</div>  
-</main>  <!-- STUDENT -->  <main id="studentPage" class="hidden">  
-<div class="card">  
-<div class="grid">  
-<div>  
-<h2 id="studentName"></h2>  
-<p>ID: <strong id="studentIDLabel"></strong></p>  
-</div>  
-<div><button id="logoutStudent" class="red">Logout</button></div>  
-</div>  
-</div>  <div class="card">  
-<h2>Warbixinta Xaadirintayda</h2>  
-<div class="stats">  
-<div class="stat">Joogay<strong id="sPresent">0</strong></div>  
-<div class="stat">Maqnaa<strong id="sAbsent">0</strong></div>  
-<div class="stat">Soo daahay<strong id="sLate">0</strong></div>  
-<div class="stat">Fasax<strong id="sLeave">0</strong></div>  
-</div>  
-</div>  <div class="card">  
-<h2>Taariikhda Xaadirintayda</h2>  
-<div class="table-wrap">  
-<table>  
-<thead><tr><th>Taariikh</th><th>Maalin</th><th>Xaalad</th></tr></thead>  
-<tbody id="studentHistory"></tbody>  
-</table>  
-</div>  
-</div>  <div class="card">  
-<h2>Beddel Password-ka</h2>  
-<form id="changePasswordForm">  
-<label for="oldPassword">Password-ka hadda</label>  
-<input id="oldPassword" type="password" required>  
-<label for="newPassword">Password cusub</label>  
-<input id="newPassword" type="password" minlength="4" required>  
-<label for="confirmPassword">Xaqiiji password-ka cusub</label>  
-<input id="confirmPassword" type="password" minlength="4" required>  
-<button type="submit">Beddel Password-ka</button>  
-</form>  
-<p id="passwordMessage" class="small"></p>  
-</div>  
-</main>  <!-- TEACHER / ADMIN -->  <main id="teacherPage" class="hidden">  <div class="card">  
-<div class="grid">  
-<div>  
-<h2 id="dashboardTitle">Maamulka Xaadirinta</h2>  
-<p id="dashboardSubtitle" class="small"></p>  
-</div>  
-<div><button id="logoutTeacher" class="red">Logout</button></div>  
-</div>  
-</div>  <div class="card">  
-<h2>Taariikhda iyo Maadooyinka</h2>  
-<div class="grid">  
-<div>  
-<label for="date">Taariikh</label>  
-<input type="date" id="date">  
-</div>  
-<div>  
-<label for="day">Maalin</label>  
-<select id="day">  
-<option>Sabti</option>  
-<option>Axad</option>  
-<option>Isniin</option>  
-<option>Talaado</option>  
-<option>Arbaco</option>  
-<option>Khamiis</option>  
-<option>Jimco</option>  
-</select>  
-</div>  
-<div>  
-<label for="subject1">Maado 1</label>  
-<input id="subject1" readonly>  
-</div>  
-<div>  
-<label for="subject2">Maado 2</label>  
-<input id="subject2" readonly>  
-</div>  
-</div>  
-</div>  <div class="card">  
-<h2>Tirakoobka Maanta</h2>  
-<div class="stats">  
-<div class="stat">Jooga<strong id="present">0</strong></div>  
-<div class="stat">Maqan<strong id="absent">0</strong></div>  
-<div class="stat">Soo daahay<strong id="late">0</strong></div>  
-<div class="stat">Fasax<strong id="leave">0</strong></div>  
-</div>  
-</div>  <div class="card">  
-<h2>Ku dar Arday Cusub</h2>  
-<div class="grid">  
-<input id="newID" placeholder="ID-ga ardayga">  
-<input id="newName" placeholder="Magaca ardayga">  
-</div>  
-<button id="addStudent" class="green">Ku dar Ardayga</button>  
-<p id="addMessage" class="small"></p>  
-<hr>  
-<h3>Ka saar Ardayga</h3>  
-<input id="removeID" placeholder="ID-ga ardayga">  
-<button id="removeStudent" class="red">Ka saar Liiska</button>  
-<p id="removeMessage" class="small"></p>  
-</div>  <div class="card">  
-<h2>Xaadirin ku raadi ID</h2>  
-<input id="markID" placeholder="Geli ID-ga ardayga">  
-<select id="markStatus">  
-<option value="">Dooro xaaladda</option>  
-<option>Jooga</option>  
-<option>Maqan</option>  
-<option>Soo daahay</option>  
-<option>Fasax</option>  
-</select>  
-<button id="markByID">Diiwaangeli</button>  
-<p id="markMessage" class="small"></p>  
-</div>  <div class="card">  
-<h2>Liiska Ardayda</h2>  
-<input id="search" placeholder="Ku raadi magaca ama ID-ga">  
-<div class="grid">  
-<button id="save" class="green">Kaydi Xaadirinta</button>  
-<button id="allPresent" class="orange">Dhammaan Jooga</button>  
-<button id="clear" class="red">Nadiifi Maalintan</button>  
-<button id="export">Soo saar CSV</button>  
-<button id="printButton">Daabac</button>  
-</div>  
-<p id="message" class="small"></p>  
-<div class="table-wrap">  
-<table>  
-<thead>  
-<tr><th>#</th><th>ID</th><th>Magaca</th><th>Xaaladda</th></tr>  
-</thead>  
-<tbody id="students"></tbody>  
-</table>  
-</div>  
-</div>  <div class="card">  
-<h2>Warbixinta Ardayga</h2>  
-<input id="historyID" placeholder="Geli ID-ga ardayga">  
-<button id="showHistory">Soo saar Warbixinta</button>  
-<div id="historyResult"></div>  
-</div>  <div class="card">  
-<h2>Maamulka Password-yada Ardayda</h2>  
-<p>Dib ugu celi password-ka ardayga haddii uu illoobo.</p>  
-<input id="resetID" placeholder="ID-ga ardayga">  
-<button id="resetPassword" class="orange">Dib ugu celi 1234</button>  
-<p id="resetMessage" class="small"></p>  
-</div>  <div class="card hidden" id="teacherManagement">  
-<h2>Liiska Macallimiinta iyo Maalmahooda</h2>  
-<div class="table-wrap">  
-<table>  
-<thead><tr><th>ID</th><th>Magaca</th><th>Maalinta Shaqada</th></tr></thead>  
-<tbody id="teacherList"></tbody>  
-</table>  
-</div>  
-</div>  </main>  <footer class="center small" style="padding:20px">  
-IT B-8 • Daily Attendance Manager  
-</footer>  <script>  
-"use strict";  
-  
-// LIISKA 42-KA ARDAY  
-const defaultStudents = [  
-[3612,"Abdalla Said Salim"],  
-[3726,"Abdimahad Abdullahi Ahmed"],  
-[3727,"Abdikafar Abdullahi Ahmed"],  
-[3560,"Abdirahman Ahmed Mohamed"],  
-[3581,"Abdirahman Hassan Mohamed"],  
-[3636,"Abdishakur Abukar Hassan"],  
-[3518,"Abdullahi Dahir Kasim"],  
-[3557,"Abshiro Hassan Ahmed"],  
-[3486,"Ahmed Abdi Ali"],  
-[3113,"Ahmed Mohamed Abdikadir"],  
-[3553,"Aisho Adan Jimale"],  
-[3723,"Ayman Koshin Abdikadir"],  
-[3477,"Bukhari Mohamud Mohamed"],  
-[3637,"Cukash Abdirisak Mohamed"],  
-[3524,"Daud Abdikadir Ahmed"],  
-[3543,"Daud Abdulkadir Mohamed"],  
-[3534,"Deko Abdi Abukar"],  
-[3622,"Halimah Mohamud Omar"],  
-[3501,"Hasila Mukhtar Mohamed"],  
-[3491,"Hawo Muhudin Ahmed"],  
-[3527,"Hussien Mohamed Mohamud"],  
-[3564,"Mohamed Abdiweli Mohamed"],  
-[3556,"Mohamed Abdulkadir Hassan"],  
-[3684,"Mohamed Abdusalam Ahmed"],  
-[3735,"Mohamed Omar Ali"],  
-[3619,"Mohamed Suleyman Yusuf"],  
-[3509,"Muhzin Abdullahi Gurre"],  
-[3721,"Muno Nur Abdullahi"],  
-[3716,"Nahid Ahmed Hassan"],  
-[3539,"Naley Hassan Ali"],  
-[3591,"Nashad Mohamud Roble"],  
-[3484,"Nuradin Abdi Alasow"],  
-[3536,"Sagal Hassan Abukar"],  
-[3550,"Salmo Abdullahi Mohamed"],  
-[3692,"Sirad Shueb Mohamed"],  
-[3523,"Suado Yusuf Omar"],  
-[3490,"Yasmin Ali Abdulle"],  
-[3513,"Zakarie Hassan Aden"],  
-[3154,"Calli Ahmed Muhudiin"],  
-[3056,"Yuusuf Mahdi Xasan"],  
-[3519,"Gobey Abdullahi Mohamed"],  
-[3573,"Nacimo Cumar Xade"]  
-];  
-  
-// MACALLIMIINTA IYO MAALINTA SHAQADOODA  
-const teachers = {  
- "3565":{name:"Cabdi Qani Jama",day:"Sabti"},  
- "3566":{name:"Farah Cabdi Cusmaan",day:"Axad"},  
- "3567":{name:"ABDIFATAH AHMED",day:"Isniin"},  
- "3568":{name:"Ibraahim",day:"Talaado"},  
- "3569":{name:"Mohamud Mohamed Hassan",day:"Arbaco"}  
-};  
-  
-// MAADOOYINKA  
-const schedule = {  
- Sabti:["Basic Networking","Basic Networking"],  
- Axad:["Introduction to Web Design HTML","Introduction to Web Design HTML"],  
- Isniin:["Discrete Math I","Introduction to Physics"],  
- Talaado:["C++","C++"],  
- Arbaco:["Accounting Principles",""],  
- Khamiis:["",""],  
- Jimco:["",""]  
-};  
-  
-const statuses=["Jooga","Maqan","Soo daahay","Fasax"];  
-const $=id=>document.getElementById(id);  
-  
-const ROSTER_KEY="ITB8_STUDENTS_V3";  
-const RECORD_KEY="ITB8_ATTENDANCE_V3";  
-const PASS_KEY="ITB8_PASSWORDS_V3";  
-  
-function readJSON(key,fallback){  
- try{  
-  const value=JSON.parse(localStorage.getItem(key));  
-  return value ?? fallback;  
- }catch(e){  
-  return fallback;  
- }  
-}  
-  
-let students=readJSON(ROSTER_KEY,null);  
-if(!Array.isArray(students)) students=defaultStudents.map(s=>[...s]);  
-  
-let records=readJSON(RECORD_KEY,{});  
-let passwords=readJSON(PASS_KEY,{});  
-let loggedStudent=null;  
-let loggedTeacher=null;  
-let isAdmin=false;  
-  
-const saveRoster=()=>localStorage.setItem(ROSTER_KEY,JSON.stringify(students));  
-const saveRecords=()=>localStorage.setItem(RECORD_KEY,JSON.stringify(records));  
-const savePasswords=()=>localStorage.setItem(PASS_KEY,JSON.stringify(passwords));  
-  
-function studentByID(id){  
- return students.find(s=>String(s[0])===String(id));  
-}  
-  
-function today(){  
- const d=new Date();  
- return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");  
-}  
-  
-$("date").value=today();  
-  
-function currentDate(){  
- return $("date").value||today();  
-}  
-  
-function dayName(date){  
- return ["Axad","Isniin","Talaado","Arbaco","Khamiis","Jimco","Sabti"]  
- [new Date(date+"T12:00:00").getDay()];  
-}  
-  
-function showPage(page){  
- ["loginPage","studentPage","teacherPage"].forEach(id=>{  
-  $(id).classList.toggle("hidden",id!==page);  
- });  
-}  
-  
-function defaultPassword(id){  
- return passwords[String(id)]||"1234";  
-}  
-  
-// LOGIN  
-function login(id,password){  
- id=String(id).trim();  
- password=String(password);  
- $("loginMessage").textContent="";  
-  
- // ADMIN  
- if(id.toUpperCase()==="ADMIN" && password==="0528"){  
-  loggedStudent=null;  
-  loggedTeacher=null;  
-  isAdmin=true;  
-  $("dashboardTitle").textContent="ADMIN — Maamulka Guud";  
-  $("dashboardSubtitle").textContent="Maamulka ardayda, xaadirinta iyo warbixinnada.";  
-  $("teacherManagement").classList.remove("hidden");  
-  renderTeacherList();  
-  showPage("teacherPage");  
-  loadDay();  
-  return;  
- }  
-  
- // MACALLIN  
- const teacher=teachers[id];  
- if(teacher){  
-  if(password!=="1234"){  
-   $("loginMessage").textContent="Password-ka macallinka waa khalad.";  
-   return;  
-  }  
-  loggedStudent=null;  
-  loggedTeacher={...teacher,id};  
-  isAdmin=false;  
-  $("dashboardTitle").textContent="Ku soo dhawoow, "+teacher.name;  
-  $("dashboardSubtitle").textContent="Macallin ID: "+id+" • Maalinta shaqada: "+teacher.day;  
-  $("teacherManagement").classList.add("hidden");  
-  showPage("teacherPage");  
-  loadDay();  
-  return;  
- }  
-  
- // ARDAY  
- const student=studentByID(id);  
- if(!student){  
-  $("loginMessage").textContent="ID-gaas lama helin.";  
-  return;  
- }  
- if(password!==defaultPassword(student[0])){  
-  $("loginMessage").textContent="Password-ku waa khalad.";  
-  return;  
- }  
-  
- loggedStudent=student;  
- loggedTeacher=null;  
- isAdmin=false;  
- $("studentName").textContent=student[1];  
- $("studentIDLabel").textContent=student[0];  
- $("passwordMessage").textContent="";  
- showPage("studentPage");  
- renderStudentHistory();  
-}  
-  
-$("loginForm").addEventListener("submit",e=>{  
- e.preventDefault();  
- login($("loginID").value,$("loginPassword").value);  
-});  
-  
-$("logoutStudent").onclick=logout;  
-$("logoutTeacher").onclick=logout;  
-  
-function logout(){  
- loggedStudent=null;  
- loggedTeacher=null;  
- isAdmin=false;  
- $("loginPassword").value="";  
- $("loginID").value="";  
- showPage("loginPage");  
-}  
-  
-// MAADO IYO MAALIN  
-function updateSubjects(){  
- const subjects=schedule[$("day").value]||["",""];  
- $("subject1").value=subjects[0];  
- $("subject2").value=subjects[1];  
-}  
-  
-// TIRAKOOB  
-function updateCounts(){  
- const data=records[currentDate()]||{};  
- $("present").textContent=students.filter(s=>data[s[0]]==="Jooga").length;  
- $("absent").textContent=students.filter(s=>data[s[0]]==="Maqan").length;  
- $("late").textContent=students.filter(s=>data[s[0]]==="Soo daahay").length;  
- $("leave").textContent=students.filter(s=>data[s[0]]==="Fasax").length;  
-}  
-  
-// LIISKA ARDAYDA  
-function renderStudents(){  
- const tbody=$("students");  
- tbody.replaceChildren();  
-  
- const data=records[currentDate()]||{};  
- const query=$("search").value.trim().toLowerCase();  
-  
- students.forEach(([id,name],index)=>{  
-  if(query&&!String(id).includes(query)&&!name.toLowerCase().includes(query))return;  
-  
-  const tr=document.createElement("tr");  
-  
-  [index+1,id,name].forEach(v=>{  
-   const td=document.createElement("td");  
-   td.textContent=v;  
-   tr.appendChild(td);  
-  });  
-  
-  const statusCell=document.createElement("td");  
-  const select=document.createElement("select");  
-  
-  const blank=document.createElement("option");  
-  blank.value="";  
-  blank.textContent="-- Dooro --";  
-  select.appendChild(blank);  
-  
-  statuses.forEach(status=>{  
-   const o=document.createElement("option");  
-   o.value=status;  
-   o.textContent=status;  
-   select.appendChild(o);  
-  });  
-  
-  select.value=data[id]||"";  
-  
-  select.addEventListener("change",()=>{  
-   if(!records[currentDate()])records[currentDate()]={};  
-  
-   if(select.value)records[currentDate()][id]=select.value;  
-   else delete records[currentDate()][id];  
-  
-   try{  
-    saveRecords();  
-    $("message").textContent="Xaadirinta waa la kaydiyey.";  
-   }catch(e){  
-    $("message").textContent="Kaydintu way fashilantay.";  
-   }  
-  
-   updateCounts();  
-  });  
-  
-  statusCell.appendChild(select);  
-  tr.appendChild(statusCell);  
-  tbody.appendChild(tr);  
- });  
-  
- updateCounts();  
-}  
-  
-// LIISKA MACALLIMIINTA  
-function renderTeacherList(){  
- const tbody=$("teacherList");  
- tbody.replaceChildren();  
-  
- Object.entries(teachers).forEach(([id,t])=>{  
-  const tr=document.createElement("tr");  
-  
-  [id,t.name,t.day].forEach(v=>{  
-   const td=document.createElement("td");  
-   td.textContent=v;  
-   tr.appendChild(td);  
-  });  
-  
-  tbody.appendChild(tr);  
- });  
-}  
-  
-// SOO BANDHIG MAALINTA  
-function loadDay(){  
- const date=currentDate();  
-  
- if(loggedTeacher&&!isAdmin){  
-  $("day").value=loggedTeacher.day;  
-  $("day").disabled=true;  
-  $("dashboardTitle").textContent="Ku soo dhawoow, "+loggedTeacher.name;  
-  $("dashboardSubtitle").textContent=  
-   "Macallin ID: "+loggedTeacher.id+" • Maalinta shaqada: "+loggedTeacher.day;  
- }else{  
-  $("day").disabled=false;  
-  $("day").value=dayName(date);  
- }  
-  
- updateSubjects();  
- renderStudents();  
-  
- $("message").textContent=  
-  "Taariikhda: "+date+" | Maalinta: "+$("day").value;  
-}  
-  
-$("date").addEventListener("change",loadDay);  
-  
-$("day").addEventListener("change",()=>{  
- if(!loggedTeacher||isAdmin)updateSubjects();  
-});  
-  
-$("search").addEventListener("input",renderStudents);  
-  
-// KU DAR ARDAY  
-$("addStudent").onclick=()=>{  
- const id=$("newID").value.trim();  
- const name=$("newName").value.trim();  
-  
- if(!id||!name){  
-  $("addMessage").textContent="Geli ID-ga iyo magaca.";  
-  return;  
- }  
-  
- if(studentByID(id)||teachers[id]||id.toUpperCase()==="ADMIN"){  
-  $("addMessage").textContent="ID-gaas horay ayuu u jiraa ama waa ID gaar ah.";  
-  return;  
- }  
-  
- students.push([id,name]);  
- students.sort((a,b)=>String(a[0]).localeCompare(String(b[0]),undefined,{numeric:true}));  
-  
- try{  
-  saveRoster();  
-  $("addMessage").textContent="Ardayga waa lagu daray. Password-ka bilowga ah waa 1234.";  
-  $("newID").value="";  
-  $("newName").value="";  
-  renderStudents();  
- }catch(e){  
-  $("addMessage").textContent="Kaydintu way fashilantay.";  
- }  
-};  
-  
-// KA SAAR ARDAY  
-$("removeStudent").onclick=()=>{  
- const id=$("removeID").value.trim();  
- const student=studentByID(id);  
-  
- if(!student){  
-  $("removeMessage").textContent="ID-ga lama helin.";  
-  return;  
- }  
-  
- if(!confirm("Ma ka saaraysaa "+student[1]+" liiska? Taariikhdiisa waa la ilaalinayaa."))return;  
-  
- students=students.filter(s=>String(s[0])!==id);  
-  
- try{  
-  saveRoster();  
-  $("removeMessage").textContent="Ardayga waa laga saaray liiska.";  
-  $("removeID").value="";  
-  renderStudents();  
- }catch(e){  
-  $("removeMessage").textContent="Kaydintu way fashilantay.";  
- }  
-};  
-  
-// XAADIRIN ID  
-$("markByID").onclick=()=>{  
- const id=$("markID").value.trim();  
- const status=$("markStatus").value;  
- const student=studentByID(id);  
-  
- if(!student){  
-  $("markMessage").textContent="ID-ga lama helin.";  
-  return;  
- }  
- if(!status){  
-  $("markMessage").textContent="Dooro xaaladda.";  
-  return;  
- }  
-  
- if(!records[currentDate()])records[currentDate()]={};  
- records[currentDate()][id]=status;  
-  
- try{  
-  saveRecords();  
-  $("markMessage").textContent=  
-   student[1]+" — "+status+" — "+currentDate();  
-  renderStudents();  
- }catch(e){  
-  $("markMessage").textContent="Kaydintu way fashilantay.";  
- }  
-};  
-  
-// KAYDI  
-$("save").onclick=()=>{  
- try{  
-  saveRecords();  
-  saveRoster();  
-  $("message").textContent="Xaadirinta waa la kaydiyey.";  
- }catch(e){  
-  $("message").textContent="Kaydintu way fashilantay.";  
- }  
-};  
-  
-// DHAMMAAN JOOGA  
-$("allPresent").onclick=()=>{  
- if(!confirm("Dhammaan ardayda ma Jooga ayaad ka dhigaysaa?"))return;  
-  
- records[currentDate()]={};  
- students.forEach(([id])=>records[currentDate()][id]="Jooga");  
- saveRecords();  
- renderStudents();  
-};  
-  
-// NADIIFI XAADIRINTA MAALINTA  
-$("clear").onclick=()=>{  
- if(!confirm("Ma tirtiraysaa xaadirinta taariikhdan?"))return;  
- delete records[currentDate()];  
- saveRecords();  
- renderStudents();  
-};  
-  
-$("printButton").onclick=()=>window.print();  
-  
-// SOO SAAR CSV  
-$("export").onclick=()=>{  
- const data=records[currentDate()]||{};  
-  
- const rows=[  
-  ["Taariikh",currentDate()],  
-  ["Maalin",$("day").value],  
-  ["Maado 1",$("subject1").value],  
-  ["Maado 2",$("subject2").value],  
-  [],  
-  ["No","ID","Magaca","Xaaladda"]  
- ];  
-  
- students.forEach(([id,name],i)=>{  
-  rows.push([i+1,id,name,data[id]||"Lama calaamadin"]);  
- });  
-  
- const csv="\uFEFF"+rows.map(row=>  
-  row.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")  
- ).join("\r\n");  
-  
- const url=URL.createObjectURL(  
-  new Blob([csv],{type:"text/csv;charset=utf-8"})  
- )
+    <section id="attendanceTab" class="tab-content">
+      <div class="panel">
+        <h2>Take daily attendance</h2>
+        <div class="grid">
+          <div><label for="attendanceDate">Attendance date</label><input type="date" id="attendanceDate"></div>
+          <div><label for="className">Class / group</label><input id="className" value="IT B-8" maxlength="60"></div>
+          <div><label for="teacherName">Teacher name</label><input id="teacherName" placeholder="Enter teacher name" maxlength="100"></div>
+          <div><label for="studentSearch">Search student</label><input id="studentSearch" placeholder="Search name or student ID"></div>
+        </div>
+        <div class="actions">
+          <button class="secondary" id="markAllPresent">Mark all present</button>
+          <button class="secondary" id="clearStatuses">Reset statuses</button>
+          <button class="success" id="saveAttendance">Save attendance</button>
+          <button class="secondary" id="printAttendance">Print register</button>
+        </div>
+        <p class="note" id="saveMessage" aria-live="polite"></p>
+      </div>
+      <div class="panel">
+        <div class="stats">
+          <div class="stat"><strong id="countTotal">0</strong><span>Total students</span></div>
+          <div class="stat"><strong id="countPresent">0</strong><span>Present</span></div>
+          <div class="stat"><strong id="countAbsent">0</strong><span>Absent</span></div>
+          <div class="stat"><strong id="countOther">0</strong><span>Late / excused</span></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Student ID</th><th>Student name</th><th>Status</th><th>Note</th></tr></thead>
+            <tbody id="attendanceRows"></tbody>
+          </table>
+        </div>
+        <div id="noStudents" class="empty hidden">No students have been added yet. Open the Students tab to add the class roster.</div>
+      </div>
+    </section>
+
+    <section id="historyTab" class="tab-content hidden">
+      <div class="panel no-print">
+        <h2>History & reports</h2>
+        <div class="grid">
+          <div><label for="historyDate">Filter by date</label><input type="date" id="historyDate"></div>
+          <div><label for="historySearch">Search student</label><input id="historySearch" placeholder="Name or student ID"></div>
+        </div>
+        <div class="actions">
+          <button id="showHistory">Show records</button>
+          <button class="secondary" id="exportCsv">Export CSV</button>
+          <button class="secondary" id="printHistory">Print report</button>
+        </div>
+      </div>
+      <div class="panel">
+        <p id="historySummary" class="note"></p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Date</th><th>Class</th><th>Student ID</th><th>Student name</th><th>Status</th><th>Note</th><th class="no-print">Action</th></tr></thead>
+          <tbody id="historyRows"></tbody>
+        </table></div>
+        <div id="noHistory" class="empty hidden">No attendance records match your filters.</div>
+      </div>
+    </section>
+
+    <section id="studentsTab" class="tab-content hidden">
+      <div class="panel">
+        <h2>Student roster</h2>
+        <p class="note">Add students individually. Use a unique student ID for each student.</p>
+        <form id="studentForm" class="grid">
+          <div><label for="studentId">Student ID</label><input id="studentId" required maxlength="40" placeholder="e.g. ITB8-001"></div>
+          <div><label for="studentName">Full name</label><input id="studentName" required maxlength="120" placeholder="Student full name"></div>
+          <div style="align-self:end"><button type="submit">Add student</button></div>
+        </form>
+        <p id="studentMessage" class="note" aria-live="polite"></p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>#</th><th>Student ID</th><th>Full name</th><th>Action</th></tr></thead>
+          <tbody id="studentRows"></tbody>
+        </table></div>
+        <div id="noRoster" class="empty hidden">The roster is empty. Add students above.</div>
+        <div class="actions"><button id="downloadBackup" class="secondary">Download backup (JSON)</button><label class="secondary" style="display:inline-flex;align-items:center;padding:9px 12px;border-radius:8px;cursor:pointer"><input id="restoreBackup" type="file" accept=".json,application/json" style="width:auto;margin-right:7px">Restore backup</label></div>
+      </div>
+    </section>
+
+    <section id="settingsTab" class="tab-content hidden">
+      <div class="panel">
+        <h2>Change password</h2>
+        <p class="note">Change the demo password for the currently selected account.</p>
+        <form id="changePasswordForm" class="grid">
+          <div><label for="passwordRole">Account</label><select id="passwordRole"><option value="teacher">Teacher</option><option value="admin">Administrator</option></select></div>
+          <div><label for="oldPassword">Current password</label><input id="oldPassword" type="password" required></div>
+          <div><label for="newPassword">New password</label><input id="newPassword" type="password" required minlength="4"></div>
+          <div><label for="confirmPassword">Confirm new password</label><input id="confirmPassword" type="password" required minlength="4"></div>
+          <div style="align-self:end"><button type="submit">Update password</button></div>
+        </form>
+        <p id="passwordMessage" class="note" aria-live="polite"></p>
+      </div>
+      <div class="panel">
+        <h2>Data and privacy</h2>
+        <div class="warning">This is a self-contained starter app. Attendance records and passwords are stored in local browser storage and are not synced to other devices. Anyone with access to this browser may be able to access or change them. Client-side passwords are only a basic convenience, not strong security. Do not enter sensitive student information on a public/shared device.</div>
+        <div class="actions"><button class="danger" id="clearAllData">Delete all attendance records</button></div>
+        <p id="settingsMessage" class="note" aria-live="polite"></p>
+      </div>
+    </section>
+  </section>
+</main>
+<footer>IT B-8 Attendance System · Local browser version · Make regular backups</footer>
+
+<script>
+"use strict";
+const STORAGE_KEY = "itb8_attendance_v1";
+const DEFAULTS = {
+  passwords: {teacher:"1234", admin:"0528"},
+  students: [],
+  records: []
+};
+let data = loadData();
+let currentRole = null;
+let currentStatuses = {};
+
+function loadData(){
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if(!saved) return structuredCloneSafe(DEFAULTS);
+    const parsed = JSON.parse(saved);
+    return {
+      passwords: {...DEFAULTS.passwords, ...(parsed.passwords || {})},
+      students: Array.isArray(parsed.students) ? parsed.students : [],
+      records: Array.isArray(parsed.records) ? parsed.records : []
+    };
+  } catch(e) { return structuredCloneSafe(DEFAULTS); }
+}
+function structuredCloneSafe(value){ return JSON.parse(JSON.stringify(value)); }
+function saveData(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+function $(id){ return document.getElementById(id); }
+function todayLocal(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function escapeHtml(value){
+  return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function statusClass(status){
+  return status === "Present" ? "present" : status === "Absent" ? "absent" : status === "Late" ? "late" : "excused";
+}
+function showApp(){
+  $("loginPanel").classList.add("hidden");
+  $("appPanel").classList.remove("hidden");
+  $("welcomeText").textContent = currentRole === "admin" ? "Signed in as Administrator" : "Signed in as Teacher";
+  renderStudents();
+  loadDateAttendance();
+}
+function signOut(){
+  currentRole = null;
+  $("appPanel").classList.add("hidden");
+  $("loginPanel").classList.remove("hidden");
+  $("loginPassword").value = "";
+}
+$("loginForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const role = $("loginRole").value;
+  if($("loginPassword").value === data.passwords[role]){
+    currentRole = role;
+    $("loginError").textContent = "";
+    showApp();
+  } else {
+    $("loginError").textContent = "Incorrect password. Please try again.";
+  }
+});
+$("logoutBtn").addEventListener("click", signOut);
+document.querySelectorAll("[data-tab]").forEach(btn => btn.addEventListener("click", () => {
+  document.querySelectorAll("[data-tab]").forEach(b => b.classList.toggle("active", b === btn));
+  document.querySelectorAll(".tab-content").forEach(tab => tab.classList.toggle("hidden", tab.id !== btn.dataset.tab));
+  if(btn.dataset.tab === "historyTab") renderHistory();
+  if(btn.dataset.tab === "studentsTab") renderStudents();
+}));
+
+$("attendanceDate").value = todayLocal();
+$("historyDate").value = "";
+$("attendanceDate").addEventListener("change", loadDateAttendance);
+$("studentSearch").addEventListener("input", renderAttendance);
+$("markAllPresent").addEventListener("click", () => {
+  data.students.forEach(s => currentStatuses[s.id] = {status:"Present", note:currentStatuses[s.id]?.note || ""});
+  renderAttendance();
+});
+$("clearStatuses").addEventListener("click", () => {
+  currentStatuses = {};
+  renderAttendance();
+});
+function loadDateAttendance(){
+  const date = $("attendanceDate").value || todayLocal();
+  const cls = $("className").value.trim() || "IT B-8";
+  const existing = data.records.filter(r => r.date === date && r.className === cls);
+  currentStatuses = {};
+  existing.forEach(r => currentStatuses[r.studentId] = {status:r.status, note:r.note || ""});
+  if(existing.length) $("teacherName").value = existing[0].teacher || "";
+  renderAttendance();
+}
+$("className").addEventListener("change", loadDateAttendance);
+function renderAttendance(){
+  const q = $("studentSearch").value.trim().toLowerCase();
+  const tbody = $("attendanceRows");
+  const students = [...data.students].sort((a,b)=>a.name.localeCompare(b.name));
+  tbody.innerHTML = "";
+  let shown = 0;
+  students.forEach((s, index) => {
+    if(q && !(s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q))) return;
+    shown++;
+    const val = currentStatuses[s.id] || {status:"Present", note:""};
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${shown}</td><td>${escapeHtml(s.id)}</td><td>${escapeHtml(s.name)}</td>
+      <td><select aria-label="Attendance status for ${escapeHtml(s.name)}" data-status-id="${escapeHtml(s.id)}">
+      ${["Present","Absent","Late","Excused"].map(st=>`<option ${val.status===st?"selected":""}>${st}</option>`).join("")}</select></td>
+      <td><input aria-label="Note for ${escapeHtml(s.name)}" data-note-id="${escapeHtml(s.id)}" value="${escapeHtml(val.note)}" maxlength="180" placeholder="Optional note"></td>`;
+    tbody.appendChild(tr);
+  });
+  $("noStudents").classList.toggle("hidden", students.length > 0);
+  tbody.querySelectorAll("[data-status-id]").forEach(el=>el.addEventListener("change",()=>{
+    const id=el.dataset.statusId;
+    currentStatuses[id] = {...(currentStatuses[id]||{}), status:el.value, note:currentStatuses[id]?.note||""};
+    updateStats();
+  }));
+  tbody.querySelectorAll("[data-note-id]").forEach(el=>el.addEventListener("input",()=>{
+    const id=el.dataset.noteId;
+    currentStatuses[id] = {...(currentStatuses[id]||{}), status:currentStatuses[id]?.status||"Present", note:el.value};
+  }));
+  updateStats();
+}
+function updateStats(){
+  const total = data.students.length;
+  let present=0, absent=0, other=0;
+  data.students.forEach(s=>{
+    const st=(currentStatuses[s.id]||{status:"Present"}).status;
+    if(st==="Present") present++;
+    else if(st==="Absent") absent++;
+    else other++;
+  });
+  $("countTotal").textContent=total;
+  $("countPresent").textContent=present;
+  $("countAbsent").textContent=absent;
+  $("countOther").textContent=other;
+}
+$("saveAttendance").addEventListener("click",()=>{
+  const date=$("attendanceDate").value;
+  if(!date){$("saveMessage").textContent="Choose an attendance date first.";return;}
+  const cls=$("className").value.trim()||"IT B-8";
+  const teacher=$("teacherName").value.trim();
+  data.records=data.records.filter(r=>!(r.date===date && r.className===cls));
+  data.students.forEach(s=>{
+    const item=currentStatuses[s.id]||{status:"Present",note:""};
+    data.records.push({date,className:cls,teacher,studentId:s.id,studentName:s.name,status:item.status||"Present",note:item.note||"",updatedAt:new Date().toISOString()});
+  });
+  try { saveData(); $("saveMessage").textContent=`Saved ${data.students.length} student record(s) for ${date}.`; }
+  catch(err){ $("saveMessage").textContent="Could not save. Browser storage may be full or disabled."; }
+});
+$("printAttendance").addEventListener("click",()=>window.print());
+
+$("studentForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const id=$("studentId").value.trim();
+  const name=$("studentName").value.trim();
+  if(!id||!name)return;
+  if(data.students.some(s=>s.id.toLowerCase()===id.toLowerCase())){
+    $("studentMessage").textContent="That student ID already exists. Please use a unique ID.";return;
+  }
+  data.students.push({id,name});
+  try{saveData();$("studentMessage").textContent=`Added ${name}.`;}
+  catch(err){$("studentMessage").textContent="Could not save student. Check available browser storage.";}
+  $("studentId").value="";$("studentName").value="";
+  renderStudents();renderAttendance();
+});
+function renderStudents(){
+  const tbody=$("studentRows");tbody.innerHTML="";
+  const students=[...data.students].sort((a,b)=>a.name.localeCompare(b.name));
+  students.forEach((s,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${i+1}</td><td>${escapeHtml(s.id)}</td><td>${escapeHtml(s.name)}</td><td><button class="danger small" data-delete-student="${escapeHtml(s.id)}">Remove</button></td>`;
+    tbody.appendChild(tr);
+  });
+  $("noRoster").classList.toggle("hidden",students.length>0);
+  tbody.querySelectorAll("[data-delete-student]").forEach(btn=>btn.addEventListener("click",()=>{
+    const id=btn.dataset.deleteStudent;
+    const student=data.students.find(s=>s.id===id);
+    if(!confirm(`Remove ${student?.name||id} from the roster? Past saved attendance records will remain.`))return;
+    data.students=data.students.filter(s=>s.id!==id);
+    delete currentStatuses[id];
+    saveData();renderStudents();renderAttendance();
+  }));
+}
+$("historyDate").addEventListener("chang
